@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "types": ["vite/client"],
+    /* React + Vite base */
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Module resolution */
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
+    /* Output control */
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Paths (optional convenience alias) */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src/renderer/**/*", "src/renderer/types/**/*", "vite.config.ts"],
+  "references": [{ "path": "./tsconfig.electron.json" }]
+}
