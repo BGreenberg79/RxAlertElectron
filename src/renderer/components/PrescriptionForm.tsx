@@ -3,10 +3,8 @@ import { PrescriptionContext } from "../context/PrescriptionContext";
 
 type Item = { displayName: string; strengths: string[]; rxcuisByIndex: string[] };
 
-// Check if we're in Electron or web
 const isElectron = typeof window !== 'undefined' && window.rxAlert !== undefined;
 
-// Web API version using proxy server
 const webSearchRxTerms = async (term: string) => {
   try {
     const response = await fetch(`http://localhost:3001/api/rxterms/search?terms=${encodeURIComponent(term)}`);
@@ -16,11 +14,9 @@ const webSearchRxTerms = async (term: string) => {
     return await response.json();
   } catch (error) {
     console.error("Web API error - is proxy server running?", error);
-    // Fallback to mock data if proxy isn't available
-    console.warn("Falling back to mock data");
     await new Promise(resolve => setTimeout(resolve, 300));
     return {
-      total: 3,
+      total: 1,
       items: [
         {
           displayName: `${term} (Mock - Start proxy server)`,
@@ -57,7 +53,6 @@ export default function PrescriptionForm() {
           ? await window.rxAlert.searchRxTerms(term.trim())
           : await webSearchRxTerms(term.trim());
         
-        console.log("Search results:", res);
         setResults(res.items ?? []);
         setSelectedIndex(null);
         setStrengthIndex(null);
@@ -97,10 +92,8 @@ export default function PrescriptionForm() {
         rxcui
       };
       
-      console.log("Adding prescription:", newRx);
       await addPrescription(newRx);
 
-      // Reset form
       setTerm("");
       setResults([]);
       setSelectedIndex(null);
@@ -108,44 +101,65 @@ export default function PrescriptionForm() {
       setInstructions("");
       setQuantity(30);
       
-      alert("Prescription added successfully!");
+      alert("✅ Prescription added successfully!");
     } catch (error) {
       console.error("Error adding prescription:", error);
-      alert("Failed to add prescription. Check console for details.");
+      alert("❌ Failed to add prescription. Check console for details.");
     }
   }
 
   return (
-    <form onSubmit={handleAdd} className="p-4 border rounded space-y-2">
+    <form onSubmit={handleAdd} className="space-y-5">
       {!isElectron && (
-        <div className="p-2 bg-blue-100 border border-blue-400 rounded text-sm mb-3">
-          ℹ️ Web mode: Using proxy server for real NIH data. Run <code className="bg-white px-1">node proxy-server.js</code> first.
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+          <p className="text-blue-800">
+            ℹ️ <strong>Web mode:</strong> Make sure proxy server is running (<code className="bg-white px-2 py-0.5 rounded">node proxy-server.js</code>)
+          </p>
         </div>
       )}
-      
+
+      {/* Search Input */}
       <div>
-        <input
-          type="text"
-          placeholder="Search brand or generic (e.g., amoxicillin or Lipitor)"
-          value={term}
-          onChange={(e) => setTerm(e.target.value)}
-          className="w-full p-2 border rounded"
-        />
-        {loading && <p className="text-sm text-gray-500 mt-1">Searching...</p>}
+        <label className="block text-sm font-bold text-gray-700 mb-2">
+          🔍 Search Medication
+        </label>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="e.g., amoxicillin, Lipitor, aspirin..."
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none text-gray-800 placeholder-gray-400"
+          />
+          {loading && (
+            <div className="absolute right-4 top-3.5">
+              <div className="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+        </div>
+        {loading && (
+          <p className="text-sm text-blue-600 mt-2 animate-pulse font-medium">
+            Searching NIH database...
+          </p>
+        )}
       </div>
 
+      {/* Drug Selection */}
       {results.length > 0 && (
-        <div>
+        <div className="animate-fadeIn">
+          <label className="block text-sm font-bold text-gray-700 mb-2">
+            💊 Select Drug
+          </label>
           <select
             value={selectedIndex ?? ""}
             onChange={(e) => { 
               setSelectedIndex(e.target.value === "" ? null : Number(e.target.value)); 
               setStrengthIndex(null); 
             }}
-            className="w-full p-2 border rounded"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none text-gray-800 bg-white cursor-pointer"
             required
           >
-            <option value="">Select a drug</option>
+            <option value="">-- Choose a medication --</option>
             {results.map((it, i) => (
               <option key={i} value={i}>{it.displayName}</option>
             ))}
@@ -153,15 +167,19 @@ export default function PrescriptionForm() {
         </div>
       )}
 
+      {/* Strength Selection */}
       {chosen && strengths.length > 0 && (
-        <div>
+        <div className="animate-fadeIn">
+          <label className="block text-sm font-bold text-gray-700 mb-2">
+            ⚖️ Select Strength / Form
+          </label>
           <select
             value={strengthIndex ?? ""}
             onChange={(e) => setStrengthIndex(e.target.value === "" ? null : Number(e.target.value))}
-            className="w-full p-2 border rounded"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none text-gray-800 bg-white cursor-pointer"
             required
           >
-            <option value="">Select strength / form</option>
+            <option value="">-- Choose strength/form --</option>
             {strengths.map((s, i) => (
               <option key={i} value={i}>{s.trim()}</option>
             ))}
@@ -169,33 +187,42 @@ export default function PrescriptionForm() {
         </div>
       )}
 
+      {/* Instructions */}
       <div>
+        <label className="block text-sm font-bold text-gray-700 mb-2">
+          📝 Instructions (Optional)
+        </label>
         <input
           type="text"
-          placeholder="Instructions (e.g., 1 tab PO BID)"
+          placeholder="e.g., 1 tab PO BID, Take with food"
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
-          className="w-full p-2 border rounded"
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none text-gray-800 placeholder-gray-400"
         />
       </div>
 
+      {/* Quantity */}
       <div>
+        <label className="block text-sm font-bold text-gray-700 mb-2">
+          🔢 Quantity
+        </label>
         <input
           type="number"
-          placeholder="Quantity (e.g., 30)"
+          placeholder="30"
           value={quantity}
           onChange={(e) => setQuantity(Number(e.target.value))}
           min={1}
-          className="w-full p-2 border rounded"
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none text-gray-800"
         />
       </div>
 
+      {/* Submit Button */}
       <button 
         type="submit" 
         disabled={!chosen || strengthIndex == null}
-        className="w-full p-2 bg-blue-500 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600"
+        className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-200 transform hover:scale-[1.02] disabled:transform-none text-lg"
       >
-        Add Prescription
+        {!chosen || strengthIndex == null ? "Select medication above" : "Add Prescription"}
       </button>
     </form>
   );
