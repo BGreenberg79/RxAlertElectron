@@ -28,6 +28,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/renderer/**/*", "src/renderer/types/**/*", "vite.config.ts"],
+  "include": ["src/renderer/**/*", "src/renderer/types/**/*", "vite.config.ts", "postcss.config.cjs"],
   "references": [{ "path": "./tsconfig.electron.json" }]
 }

@@ -7,9 +7,12 @@ import Tracker from "./components/Tracker";
 const isElectron = typeof window !== 'undefined' && typeof (window as any).rxAlert !== 'undefined';
 
 // Auth0 config
-const domain = import.meta.env.VITE_AUTH0_DOMAIN || "";
-const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID || "";
+const domain = "dev-z3e5nxsdjlzk5mu6.us.auth0.com";
+const clientId = "KBkrWaToyWqRwKSE7bq0F42BQlF8upK9";
 const redirectUri = window.location.origin;
+
+console.log(domain)
+console.log(clientId)
 
 function LoginButton() {
   const { loginWithRedirect } = useAuth0();

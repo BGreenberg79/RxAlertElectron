@@ -50,3 +50,4 @@ coverage/
 
 # User data (if storing locally)
 prescriptions.json
+.vercel
