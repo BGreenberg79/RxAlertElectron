@@ -1,8 +1,12 @@
 {
   "name": "rxalertelectron",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/electron/main.js",
   "scripts": {
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "pack": "npm run build:renderer && npm run build:electron && electron-builder --dir",
+    "dist": "npm run build:renderer && npm run build:electron && electron-builder",
     "dev": "concurrently \"vite\" \"npm run watch:main\" \"npm run start:electron\"",
     "watch:main": "tsc -p tsconfig.electron.json -w",
     "start:electron": "wait-on http://localhost:5173 && node delay-start.js",
@@ -13,6 +17,24 @@
   "author": "",
   "license": "ISC",
   "description": "",
+  "build": {
+    "appId": "com.yourcompany.rxalert",
+    "productName": "RxAlert",
+    "directories": { "output": "release" },
+    "files": [
+      "dist/**",
+      "package.json"
+    ],
+    "win": {
+      "target": ["nsis"],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    }
+  },
   "dependencies": {
     "@auth0/auth0-react": "^2.8.0",
     "@electron/remote": "^2.1.3",
