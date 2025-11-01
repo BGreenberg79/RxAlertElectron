@@ -112,9 +112,9 @@ export default function PrescriptionForm() {
     <form onSubmit={handleAdd} className="space-y-5">
       {!isElectron && (
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-          <p className="text-blue-800">
+          {/* <p className="text-blue-800">
             ℹ️ <strong>Web mode:</strong> Make sure proxy server is running (<code className="bg-white px-2 py-0.5 rounded">node proxy-server.js</code>)
-          </p>
+          </p> */}
         </div>
       )}
 
