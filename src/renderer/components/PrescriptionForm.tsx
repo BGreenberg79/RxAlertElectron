@@ -7,19 +7,20 @@ const isElectron = typeof window !== 'undefined' && window.rxAlert !== undefined
 
 const webSearchRxTerms = async (term: string) => {
   try {
-    const response = await fetch(`http://localhost:3001/api/rxterms/search?terms=${encodeURIComponent(term)}`);
+    // Use Vercel serverless function
+    const response = await fetch(`/api/rxterms?terms=${encodeURIComponent(term)}`);
     if (!response.ok) {
-      throw new Error('Proxy server error');
+      throw new Error('API error');
     }
     return await response.json();
   } catch (error) {
-    console.error("Web API error - is proxy server running?", error);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    console.error("Web API error:", error);
+    // Fallback to mock data
     return {
       total: 1,
       items: [
         {
-          displayName: `${term} (Mock - Start proxy server)`,
+          displayName: `${term} (Error - Check connection)`,
           strengths: ["10 mg tablet", "20 mg tablet"],
           rxcuisByIndex: ["mock1", "mock2"]
         }
@@ -27,7 +28,6 @@ const webSearchRxTerms = async (term: string) => {
     };
   }
 };
-
 export default function PrescriptionForm() {
   const { addPrescription } = useContext(PrescriptionContext);
   const [term, setTerm] = useState("");
