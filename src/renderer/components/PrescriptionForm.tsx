@@ -111,12 +111,22 @@ export default function PrescriptionForm() {
   return (
     <form onSubmit={handleAdd} className="space-y-5">
       {!isElectron && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-          {/* <p className="text-blue-800">
-            ℹ️ <strong>Web mode:</strong> Make sure proxy server is running (<code className="bg-white px-2 py-0.5 rounded">node proxy-server.js</code>)
-          </p> */}
-        </div>
-      )}
+  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700 italic">
+    <p>
+      Data powered by the{" "}
+      <a
+        href="https://clinicaltables.nlm.nih.gov/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline hover:text-blue-900"
+      >
+        U.S. National Library of Medicine (NIH)
+      </a>{" "}
+      and additional open health data sources.
+    </p>
+  </div>
+)}
+
 
       {/* Search Input */}
       <div>
