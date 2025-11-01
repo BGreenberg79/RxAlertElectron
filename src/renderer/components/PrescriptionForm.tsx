@@ -3,31 +3,40 @@ import { PrescriptionContext } from "../context/PrescriptionContext";
 
 type Item = { displayName: string; strengths: string[]; rxcuisByIndex: string[] };
 
-const isElectron = typeof window !== 'undefined' && window.rxAlert !== undefined;
+// Detect Electron (renderer) via preload-exposed API
+const isElectron = typeof window !== "undefined" && (window as any).rxAlert !== undefined;
+
+// In production (packaged Electron or web), use your deployed Vercel domain.
+// In dev, use relative path so your local dev server/proxy works.
+const API_BASE = import.meta.env.PROD
+  ? "https://rx-alert-electron.vercel.app"
+  : "";
 
 const webSearchRxTerms = async (term: string) => {
   try {
-    // Use Vercel serverless function
-    const response = await fetch(`/api/rxterms?terms=${encodeURIComponent(term)}`);
+    const response = await fetch(
+      `${API_BASE}/api/rxterms?terms=${encodeURIComponent(term)}`
+    );
     if (!response.ok) {
-      throw new Error('API error');
+      throw new Error("API error");
     }
     return await response.json();
   } catch (error) {
     console.error("Web API error:", error);
-    // Fallback to mock data
+    // Fallback to mock data for a graceful UX
     return {
       total: 1,
       items: [
         {
           displayName: `${term} (Error - Check connection)`,
           strengths: ["10 mg tablet", "20 mg tablet"],
-          rxcuisByIndex: ["mock1", "mock2"]
-        }
-      ]
+          rxcuisByIndex: ["mock1", "mock2"],
+        },
+      ],
     };
   }
 };
+
 export default function PrescriptionForm() {
   const { addPrescription } = useContext(PrescriptionContext);
   const [term, setTerm] = useState("");
@@ -40,19 +49,19 @@ export default function PrescriptionForm() {
 
   useEffect(() => {
     const t = setTimeout(async () => {
-      if (!term.trim()) { 
-        setResults([]); 
-        setSelectedIndex(null); 
+      if (!term.trim()) {
+        setResults([]);
+        setSelectedIndex(null);
         setStrengthIndex(null);
-        return; 
+        return;
       }
-      
+
       setLoading(true);
       try {
-        const res = isElectron 
-          ? await window.rxAlert.searchRxTerms(term.trim())
+        const res = isElectron
+          ? await (window as any).rxAlert.searchRxTerms(term.trim())
           : await webSearchRxTerms(term.trim());
-        
+
         setResults(res.items ?? []);
         setSelectedIndex(null);
         setStrengthIndex(null);
@@ -73,14 +82,14 @@ export default function PrescriptionForm() {
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    
+
     if (!chosen || strengthIndex == null) {
       alert("Please select a drug and strength from the dropdown menus.");
       return;
     }
 
     const rxcui = rxcuiForStrength(strengthIndex);
-    
+
     try {
       const newRx = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -89,9 +98,9 @@ export default function PrescriptionForm() {
         instructions,
         quantity,
         taken: 0,
-        rxcui
+        rxcui,
       };
-      
+
       await addPrescription(newRx);
 
       setTerm("");
@@ -100,7 +109,7 @@ export default function PrescriptionForm() {
       setStrengthIndex(null);
       setInstructions("");
       setQuantity(30);
-      
+
       alert("✅ Prescription added successfully!");
     } catch (error) {
       console.error("Error adding prescription:", error);
@@ -111,22 +120,21 @@ export default function PrescriptionForm() {
   return (
     <form onSubmit={handleAdd} className="space-y-5">
       {!isElectron && (
-  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700 italic">
-    <p>
-      Data powered by the{" "}
-      <a
-        href="https://clinicaltables.nlm.nih.gov/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="underline hover:text-blue-900"
-      >
-        U.S. National Library of Medicine (NIH)
-      </a>{" "}
-      and additional open health data sources.
-    </p>
-  </div>
-)}
-
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700 italic">
+          <p>
+            Data powered by the{" "}
+            <a
+              href="https://clinicaltables.nlm.nih.gov/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-blue-900"
+            >
+              U.S. National Library of Medicine (NIH)
+            </a>{" "}
+            and additional open health data sources.
+          </p>
+        </div>
+      )}
 
       {/* Search Input */}
       <div>
@@ -162,16 +170,18 @@ export default function PrescriptionForm() {
           </label>
           <select
             value={selectedIndex ?? ""}
-            onChange={(e) => { 
-              setSelectedIndex(e.target.value === "" ? null : Number(e.target.value)); 
-              setStrengthIndex(null); 
+            onChange={(e) => {
+              setSelectedIndex(e.target.value === "" ? null : Number(e.target.value));
+              setStrengthIndex(null);
             }}
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none text-gray-800 bg-white cursor-pointer"
             required
           >
             <option value="">-- Choose a medication --</option>
             {results.map((it, i) => (
-              <option key={i} value={i}>{it.displayName}</option>
+              <option key={i} value={i}>
+                {it.displayName}
+              </option>
             ))}
           </select>
         </div>
@@ -191,7 +201,9 @@ export default function PrescriptionForm() {
           >
             <option value="">-- Choose strength/form --</option>
             {strengths.map((s, i) => (
-              <option key={i} value={i}>{s.trim()}</option>
+              <option key={i} value={i}>
+                {s.trim()}
+              </option>
             ))}
           </select>
         </div>
@@ -227,8 +239,8 @@ export default function PrescriptionForm() {
       </div>
 
       {/* Submit Button */}
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         disabled={!chosen || strengthIndex == null}
         className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-200 transform hover:scale-[1.02] disabled:transform-none text-lg"
       >

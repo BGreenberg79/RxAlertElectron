@@ -1,3 +1,4 @@
+// src/electron/main.ts
 import { app, BrowserWindow, ipcMain, Notification } from "electron";
 import path from "node:path";
 import fs from "node:fs/promises";
@@ -9,6 +10,23 @@ let win: BrowserWindow | null = null;
 // Lazy getter so we only call app.getPath after app is ready
 function getDataPath() {
   return path.join(app.getPath("userData"), "prescriptions.json");
+}
+
+async function loadRenderer(window: BrowserWindow) {
+  // Prefer a dev server, but gracefully fall back to built HTML if it's not running
+  const devUrl = process.env.ELECTRON_RENDERER_URL || "http://localhost:5173";
+  const builtIndex = path.join(__dirname, "../renderer/index.html");
+
+  if (isDev) {
+    try {
+      await window.loadURL(devUrl);
+      window.webContents.openDevTools();
+      return;
+    } catch {
+      // Dev server not running: fall back to built file
+    }
+  }
+  await window.loadFile(builtIndex);
 }
 
 async function createWindow() {
@@ -23,12 +41,7 @@ async function createWindow() {
     },
   });
 
-  if (isDev) {
-    await win.loadURL("http://localhost:5173");
-    win.webContents.openDevTools();
-  } else {
-    await win.loadFile(path.join(__dirname, "../renderer/index.html"));
-  }
+  await loadRenderer(win);
 }
 
 /** ---------- IPC: RxNav / NIH calls ---------- */
@@ -57,9 +70,9 @@ ipcMain.handle("rxterms:search", async (_evt, term: string) => {
       params: {
         terms: term,
         // extra fields: strengths list + RXCUIs for each strength-form
-        ef: "STRENGTHS_AND_FORMS,RXCUIS,DISPLAY_NAME_SYNONYM"
+        ef: "STRENGTHS_AND_FORMS,RXCUIS,DISPLAY_NAME_SYNONYM",
       },
-      timeout: 8000
+      timeout: 8000,
     }
   );
 
@@ -75,7 +88,7 @@ ipcMain.handle("rxterms:search", async (_evt, term: string) => {
   const normalized = displayArr.map((disp, i) => ({
     displayName: disp?.[0],
     strengths: strengthsList?.[i] ?? [],
-    rxcuisByIndex: rxcuisList?.[i] ?? []
+    rxcuisByIndex: rxcuisList?.[i] ?? [],
   }));
 
   return { total, items: normalized };
@@ -121,4 +134,12 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
+});
+
+/** ---------- Safety logging ---------- */
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Promise Rejection in main process:", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception in main process:", err);
 });
