@@ -6,13 +6,14 @@ export default defineConfig({
   plugins: [react()],
   root: "src/renderer",
   base: "./",
+  publicDir: path.resolve(__dirname, "public"),
   build: {
     outDir: "../../dist/renderer",
     emptyOutDir: true,
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "../../src"),
+      "@": path.resolve(__dirname, "src"),
     },
   },
   optimizeDeps: {
